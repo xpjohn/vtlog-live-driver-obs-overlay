@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VTLOG Live Driver OBS Overlay</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 720px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            color: #e0e0e0;
+            background: #1a1a1a;
+        }
+
+        h1 {
+            margin-bottom: .25rem;
+            display: inline;
+        }
+
+        .version {
+            font-size: 1rem;
+            color: #888;
+            font-weight: 400;
+            vertical-align: middle;
+            margin-left: .5rem;
+        }
+
+        ol li {
+            margin-bottom: .5rem;
+        }
+
+        .note {
+            background: #2a2a2a;
+            border-left: 3px solid #facc15;
+            padding: .75rem 1rem;
+            border-radius: 0 6px 6px 0;
+            margin: 1rem 0;
+        }
+
+        .steam-input {
+            padding: 8px 12px;
+            font-size: 1rem;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: #e0e0e0;
+            width: 100%;
+            font-family: monospace;
+            box-sizing: border-box;
+            margin-top: 4px;
+        }
+
+        .steam-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .color-row input[type=color] {
+            width: 36px;
+            height: 30px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #2a2a2a;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .color-row code {
+            font-size: .9rem;
+            color: #93c5fd;
+        }
+
+        .opacity-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .opacity-row input[type=range] {
+            flex: 1;
+            accent-color: #2563eb;
+        }
+
+        .opacity-row code {
+            font-size: .9rem;
+            color: #93c5fd;
+            min-width: 28px;
+        }
+
+        .output-wrap {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            margin-top: 4px;
+        }
+
+        .css-output {
+            flex: 1;
+            min-height: 110px;
+            max-height: 260px;
+            font-family: monospace;
+            font-size: 0.72rem;
+            background: #2a2a2a;
+            color: #93c5fd;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: .9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .copy-btn.copied {
+            background: #16a34a;
+        }
+
+        .copy-btn:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .url-display {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: monospace;
+            font-size: .9rem;
+            color: #93c5fd;
+            word-break: break-all;
+            margin-top: 4px;
+        }
+
+        .url-display.placeholder {
+            color: #555;
+        }
+
+        .hint {
+            font-size: .8rem;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .status-ok {
+            color: #4ade80;
+            font-size: .82rem;
+            margin-top: 3px;
+        }
+
+        .status-err {
+            color: #f87171;
+            font-size: .82rem;
+            margin-top: 3px;
+        }
+
+        a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        a:visited {
+            color: #93c5fd;
+        }
+
+        kbd {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-size: .85rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>VTLOG Live Driver OBS Overlay <span class="version">v1.0.0</span></h1>
+
+    <p>A 1024&times;75 Browser Source for OBS Studio that shows your live VTLOG job data.</p>
+
+    <h2>1. Configure</h2>
+    <ol>
+        <li>
+            Enter your VTLOG profile link:
+            <input type="text" id="steamInput" class="steam-input"
+                placeholder="https://vtlog.net/profile/76561198123484666">
+            <div id="steamErr" class="status-err" style="display:none">Enter a valid VTLOG profile URL or Steam ID64.
+            </div>
+            <div id="steamOk" class="status-ok" style="display:none"></div>
+        </li>
+        <li>
+            Enter your VTLOG VTC link or ID:
+            <input type="text" id="vtcInput" class="steam-input" placeholder="https://vtlog.net/vtc/5812">
+            <div id="vtcErr" class="status-err" style="display:none">Enter a VTC ID (e.g. 5812) or a vtlog.net/vtc/…
+                URL.</div>
+            <div id="vtcOk" class="status-ok" style="display:none"></div>
+        </li>
+        <li>
+            Enter your VTC logo image URL <em style="color:#666">(optional)</em>:
+            <input type="text" id="logoInput" class="steam-input" placeholder="https://example.com/logo.png">
+            <div class="hint">Any direct image URL. Leave blank to hide the VTC logo.<br>Transparent logos / favicons with negative space are only recommended for light mode.</div>
+        </li>
+        <li>
+            Pick a background color:
+            <div class="color-row">
+                <input type="color" id="bgColor" value="#121212">
+                <code id="bgColorLabel">#121212</code>
+            </div>
+        </li>
+        <li>
+            Set background opacity:
+            <div class="opacity-row">
+                <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="0.8">
+                <code id="bgOpacityLabel">0.8</code>
+            </div>
+        </li>
+        <li>
+            Copy the generated CSS:
+            <div class="output-wrap">
+                <textarea id="cssOutput" class="css-output" readonly spellcheck="false"
+                    placeholder="Fill in your VTLOG profile link above to generate the CSS."></textarea>
+                <button class="copy-btn" id="copyBtn" onclick="copyCss()" disabled>Copy CSS</button>
+            </div>
+        </li>
+    </ol>
+
+    <h2>2. Add to OBS</h2>
+    <ol>
+        <li>In your scene, click <strong>+</strong> in the <em>Sources</em> panel and select <strong>Browser</strong>.
+        </li>
+        <li>Give it a name (e.g. <em>VTLOG Live</em>) and click <strong>OK</strong>.</li>
+        <li>
+            Set <strong>URL</strong> to:
+            <div id="urlDisplay" class="url-display placeholder">Enter your VTC link or ID above.</div>
+        </li>
+        <li>Set <strong>Width</strong> to <strong>1024</strong> and <strong>Height</strong> to <strong>75</strong>.</li>
+        <li>Scroll down to <strong>Custom CSS</strong>, clear the default content, and paste the copied CSS.</li>
+        <li>Click <strong>OK</strong>, then position and resize the source in your scene as needed.</li>
+        <li>Right-click the source &rarr; <em>Interact</em>, then log in to VTLOG with your Steam account. OBS keeps the
+            session active between restarts. Refresh the source to update the overlay.</li>
+    </ol>
+
+    <div class="note">
+        <strong>Session expired?</strong> If the overlay shows a login button instead of job data, right-click the
+        source &rarr; <em>Interact</em> and sign in again. Refresh the source to update the overlay.
+    </div>
+
+    <h2>Usage</h2>
+    <ul>
+        <li>Start a job in-game. Your job appears on the VTC live page and the overlay fades in automatically.</li>
+        <li>The overlay fades out when the job ends or you go offline.</li>
+        <li>Regenerate and repaste the CSS if you change your Steam ID, logo, or colors.</li>
+    </ul>
+
+    <h2>Requirements</h2>
+    <ul>
+        <li>OBS Studio 28+ (ships with a built-in Chromium browser source).</li>
+        <li>A VTLOG account linked to your Steam profile.</li>
+        <li>Your account must be visible on the live drivers page in your VTC.</li>
+    </ul>
+
+    <script>
+        function parseSteamId(raw) {
+            raw = raw.trim();
+            const mUrl = raw.match(/^(?:https?:\/\/)?(?:beta\.)?vtlog\.net\/profile\/(7656119\d{10})(?:\/.*)?$/);
+            if (mUrl) return mUrl[1];
+            const mId = raw.match(/^(7656119\d{10})$/);
+            if (mId) return mId[1];
+            return null;
+        }
+
+        function parseVtcUrl(raw) {
+            raw = raw.trim();
+            // Bare numeric ID
+            const mId = raw.match(/^(\d+)$/);
+            if (mId) return `https://vtlog.net/vtc/${mId[1]}/live`;
+            // Full or partial URL — accept vtlog.net or beta.vtlog.net, with or without /live
+            const mUrl = raw.match(/^(?:https?:\/\/)?((beta\.)?vtlog\.net)\/vtc\/(\d+)(?:\/.*)?$/);
+            if (mUrl) return `https://${mUrl[1]}/vtc/${mUrl[3]}/live`;
+            return null;
+        }
+
+        function buildCSS(steamId, bgHex, opacity, logoUrl) {
+            const r = parseInt(bgHex.slice(1, 3), 16);
+            const g = parseInt(bgHex.slice(3, 5), 16);
+            const b = parseInt(bgHex.slice(5, 7), 16);
+            const bg = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+
+            // Luminance-based color selection
+            const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            const light = lum > 0.5;
+            const barTrack = light ? 'rgb(160 160 160 / 80%)' : 'rgb(80 80 80 / 80%)';
+            const barFill = light ? '#181818' : 'rgb(255 153 0)';
+            const speedBorder = light ? 'rgb(160, 160, 160)' : 'rgb(50, 50, 50)';
+            const lightExtra = light
+                ? `\n#list tr td:not(:nth-child(7)) * {\n  color: #181818 !important;\n}\n\n.vh-live-speed-val, .vh-live-speed-val.cruise {\n  color: #181818 !important;\n}\n\n.vh-live-card::before,\n.vh-live-card::after {\n  filter: brightness(0) !important;\n}`
+                : '';
+
+            const hasLogo = logoUrl && logoUrl.trim().length > 0;
+            const padLeft = hasLogo ? '78px' : '50px';
+            const logoRule = hasLogo
+                ? `.vh-live-card::after {\n  left: 42px !important;\n  background: url('${logoUrl.trim()}') no-repeat center / contain !important;\n}`
+                : `.vh-live-card::after {\n  display: none !important;\n}`;
+
+            return `/* ==========================================
+   VTLog Stream Overlay — Job Live Data
+   Overlay Size: 1024 x 75px
+   ========================================== */
+
+tr.users:not(#user-${steamId}) {
+  display: none !important;
+}
+
+body:has(#user-${steamId} [id$="td-progress"]:not(.d-none)) .vh-live-card {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+html, body, body[data-theme="dark"] .wrapper, body[data-theme="dark"] .main, .vh-live-wrap, .vh-live-table-wrap {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+body > *:not(.wrapper), tr .d-none, nav, footer, .offcanvas, .overlay, .modal, .notyf, .notyf-announcer, #awn-toast-container, .content-breadcrumb, .topbar, .vh-live-card-h, thead, #offline_message, .data-table {
+  display: none !important;
+}
+
+.vh-live-card {
+  width: 1024px !important;
+  height: 75px !important;
+  background: ${bg} !important;
+  border-radius: 5px !important;
+  box-sizing: border-box !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  padding: 0 0 0 ${padLeft} !important;
+  margin: 0 !important;
+  position: relative !important;
+  display: flex !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 1000ms ease !important;
+}
+
+.vh-live-card::before,
+.vh-live-card::after {
+  width: 22px !important;
+  height: 22px !important;
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 10 !important;
+}
+
+.vh-live-card::before {
+  left: 14px !important;
+  background: url('https://assets.vtlog.net/images/logos/vtlog_default_256.png') no-repeat center / contain !important;
+}
+
+${logoRule}
+
+.vh-live-table-wrap {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.vh-live-bar-block {
+  gap: 3px;
+}
+
+.vh-live-bar-h {
+  text-transform: capitalize !important;
+}
+
+i {
+  opacity: 1 !important;
+}
+
+#liveTable {
+  width: auto !important;
+}
+
+#list span {
+  font-size: 12px !important;
+  line-height: 12px !important;
+}
+
+#list tr {
+  display: flex;
+  align-items: center !important;
+}
+
+#list tr td {
+  margin: 0 !important;
+  border: 0 !important;
+  padding: 0px 25px 0px 0px !important;
+}
+
+tr.users:hover td {
+  background: transparent !important;
+}
+
+/* Override colors */
+* {
+  color: #f1f1f1;
+}
+
+.label {
+  color: #c1c1c1 !important;
+}
+
+.val, .pct {
+  color: #f1f1f1 !important;
+}
+
+.vh-live-bar {
+  background: ${barTrack} !important;
+}
+
+.progress, .fuel {
+  background: ${barFill} !important;
+}${lightExtra}
+
+@media (max-width: 900px) {
+  .vh-live-table tr.users {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    td[data-label]::before {
+      display: none !important;
+    }
+  }
+}
+
+/* Override column data styles */
+td:nth-child(1) {
+  max-width: 130px !important;
+  div {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+[id$="td-damage"] > div {
+  white-space: nowrap !important;
+}
+
+[id$="td-cargo"] {
+  max-width: 130px !important;
+  div {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+td:nth-child(4) div {
+  width: 120px;
+  white-space: nowrap !important;
+}
+
+[id$="td-progress"] {
+  width: 250px !important;
+  min-width: 100px !important;
+  max-width: 300px !important;
+}
+
+[id$="td-progress"] .vh-live-bar-route {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+}
+
+[id$="td-progress"] .vh-live-bar-route > span:not(.arrow) {
+  text-transform: none !important;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+[id$="td-progress"] .vh-live-bar-route > .arrow {
+  flex-shrink: 0 !important;
+}
+
+[id$="td-progress"] .vh-live-bar-route > [id$="-destination"] {
+  text-align: right !important;
+}
+
+[id$="td-finance"] > div {
+  white-space: nowrap !important;
+}
+
+#list tr td:nth-child(7) {
+  padding-right: 0px !important;
+  .vh-live-speed:not(.over) {
+    border-color: ${speedBorder};
+  }
+  .vh-live-speed-val {
+    font-size: 16px !important;
+  }
+  .vh-live-speed-limit {
+    font-size: 9px !important;
+  }
+}
+
+/* ==========================================
+   Login page fallback
+   ========================================== */
+
+body:has(.lp-hero-login-buttons) > section.lp-hero,
+body:has(.lp-hero-login-buttons) .lp-hero-content {
+  display: block !important;
+}
+
+body:has(.lp-hero-login-buttons) section.lp-hero > *:not(.lp-hero-content),
+body:has(.lp-hero-login-buttons) .lp-hero-content > *:not(.lp-hero-login-buttons) {
+  display: none !important;
+}
+
+body:has(.lp-hero-login-buttons) .lp-hero-login-buttons {
+  display: flex !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 1024px !important;
+  height: 75px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  background: ${bg} !important;
+  border-radius: 7px !important;
+  z-index: 9999 !important;
+  padding: 0 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* ==========================================
+   Steam OpenID login fallback
+   ========================================== */
+
+html:has(body.login),
+body.login {
+  background: transparent !important;
+}
+
+body.login > .responsive_page_frame,
+body.login .responsive_page_content,
+body.login #responsive_page_template_content,
+body.login .page_content,
+body.login .login_featuretarget_ctn,
+body.login .login_featuretarget_ctn > div,
+body.login ._2vAS_iK_bJ7iv_7pRL7Zdk,
+body.login ._2vAS_iK_bJ7iv_7pRL7Zdk > div {
+  display: block !important;
+}
+
+body.login .responsive_page_frame > *:not(.responsive_page_content),
+body.login .responsive_page_content > *:not(#responsive_page_template_content),
+body.login #responsive_page_template_content > *:not(.page_content),
+body.login .page_content > *:not(.login_featuretarget_ctn) {
+  display: none !important;
+}
+
+body.login ._3XCnc4SuTz8V8-jXVwkt_s {
+  display: flex !important;
+  align-items: center !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 1024px !important;
+  height: 75px !important;
+  background: ${bg} !important;
+  z-index: 9999 !important;
+  box-sizing: border-box !important;
+  padding: 0 20px !important;
+  overflow: hidden !important;
+}
+
+body.login .responsive_page_frame,
+body.login .responsive_page_content,
+body.login #responsive_page_template_content,
+body.login .page_content,
+body.login .login_featuretarget_ctn,
+body.login .login_featuretarget_ctn > div,
+body.login ._2vAS_iK_bJ7iv_7pRL7Zdk,
+body.login ._2vAS_iK_bJ7iv_7pRL7Zdk > div {
+  background: none !important;
+}
+
+body.login .g5L61o-ZrHHmwLEugLjLI {
+  display: none !important;
+}
+
+body.login .ZHRZ8czyqs7NaNmv65ARI {
+  width: 100% !important;
+}
+
+body.login ._2oMvaF46xYOE6Guy0xjCAl,
+body.login ._3wSeH3OorL-tMzwXL55smN,
+body.login .XrYgea66b38RASmbI3PJo,
+body.login .tool-tip-source,
+body.login ._1W_6HXiG4JJ0By1qN_0fGZ,
+body.login a._1K431RbY14lkaFW6-XgSsC {
+  display: none !important;
+}
+
+body.login ._2v60tM463fW0V7GDe92E5f {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+body.login ._3BkiHun-mminuTO-Y-zXke {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+
+body.login ._2GBWeup5cttgbTw8FM3tfx {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.login ._16fbihk6Bi9CXuksG7_tLt {
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* ==========================================
+   Steam OpenID confirmation fallback
+   ========================================== */
+
+html:has(.OpenIDCol),
+body:has(.OpenIDCol) {
+  background: transparent !important;
+}
+
+body:has(.OpenIDCol) > .responsive_page_frame,
+body:has(.OpenIDCol) .responsive_page_content,
+body:has(.OpenIDCol) #responsive_page_template_content,
+body:has(.OpenIDCol) #mainBody {
+  display: block !important;
+}
+
+body:has(.OpenIDCol) .responsive_page_frame > *:not(.responsive_page_content),
+body:has(.OpenIDCol) .responsive_page_content > *:not(#responsive_page_template_content),
+body:has(.OpenIDCol) #responsive_page_template_content > *:not(#mainBody) {
+  display: none !important;
+}
+
+body:has(.OpenIDCol) .OpenID_MainHeader,
+body:has(.OpenIDCol) .OpenIDCol.right {
+  display: none !important;
+}
+
+body:has(.OpenIDCol) .OpenIDCol.left {
+  display: flex !important;
+  align-items: center !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 1024px !important;
+  height: 75px !important;
+  background: ${bg} !important;
+  z-index: 9999 !important;
+  box-sizing: border-box !important;
+  padding: 0 20px !important;
+  overflow: hidden !important;
+}
+
+body:has(.OpenIDCol) .OpenID_LowerContents_left {
+  width: 100% !important;
+}
+
+body:has(.OpenIDCol) .OpenID_LowerContents_left br,
+body:has(.OpenIDCol) .OpenID_loggedInText h2,
+body:has(.OpenIDCol) #error_display {
+  display: none !important;
+}
+
+body:has(.OpenIDCol) .OpenID_LowerContents_left > form {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+body:has(.OpenIDCol) .OpenID_loggedInText {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+body:has(.OpenIDCol) .OpenID_UserContainer {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+body:has(.OpenIDCol) #imageLogin {
+  margin: 0 0 0 auto !important;
+  flex-shrink: 0 !important;
+}`;
+        }
+
+        function update() {
+            const steamRaw = document.getElementById('steamInput').value;
+            const vtcRaw = document.getElementById('vtcInput').value;
+            const logoRaw = document.getElementById('logoInput').value.trim();
+            const bgHex = document.getElementById('bgColor').value;
+            const opacity = parseFloat(document.getElementById('bgOpacity').value);
+
+            document.getElementById('bgColorLabel').textContent = bgHex;
+            document.getElementById('bgOpacityLabel').textContent = opacity;
+
+            const steamId = parseSteamId(steamRaw);
+            const vtcUrl = parseVtcUrl(vtcRaw);
+
+            // Steam ID feedback
+            const steamErr = document.getElementById('steamErr');
+            const steamOk = document.getElementById('steamOk');
+            if (steamRaw.trim() && !steamId) {
+                steamErr.style.display = 'block';
+                steamOk.style.display = 'none';
+            } else if (steamId) {
+                steamErr.style.display = 'none';
+                steamOk.style.display = 'block';
+                steamOk.textContent = 'Steam ID64: ' + steamId;
+            } else {
+                steamErr.style.display = 'none';
+                steamOk.style.display = 'none';
+            }
+
+            // VTC URL feedback
+            const vtcErr = document.getElementById('vtcErr');
+            const vtcOk = document.getElementById('vtcOk');
+            if (vtcRaw.trim() && !vtcUrl) {
+                vtcErr.style.display = 'block';
+                vtcOk.style.display = 'none';
+            } else if (vtcUrl) {
+                vtcErr.style.display = 'none';
+                vtcOk.style.display = 'block';
+                vtcOk.textContent = vtcUrl;
+            } else {
+                vtcErr.style.display = 'none';
+                vtcOk.style.display = 'none';
+            }
+
+            // URL display
+            const urlEl = document.getElementById('urlDisplay');
+            if (vtcUrl) {
+                urlEl.textContent = vtcUrl;
+                urlEl.classList.remove('placeholder');
+            } else {
+                urlEl.textContent = 'Enter your VTC link or ID above.';
+                urlEl.classList.add('placeholder');
+            }
+
+            // CSS output
+            const cssEl = document.getElementById('cssOutput');
+            const copyEl = document.getElementById('copyBtn');
+            if (steamId) {
+                cssEl.value = buildCSS(steamId, bgHex, opacity, logoRaw);
+                copyEl.disabled = false;
+            } else {
+                cssEl.value = '';
+                copyEl.disabled = true;
+            }
+        }
+
+        function copyCss() {
+            const val = document.getElementById('cssOutput').value;
+            if (!val) return;
+            navigator.clipboard.writeText(val).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy CSS';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        document.getElementById('steamInput').addEventListener('input', update);
+        document.getElementById('vtcInput').addEventListener('input', update);
+        document.getElementById('logoInput').addEventListener('input', update);
+        document.getElementById('bgColor').addEventListener('input', update);
+        document.getElementById('bgOpacity').addEventListener('input', update);
+
+        update();
+    </script>
+
+    <a style="font-size: 0.8em; text-align: right; display: block; margin-top: 2rem;"
+        href="https://vtlog.net/profile/76561198123484666" target="_blank"><i>Made by [TPH] John</i></a>
+
+</body>
+
+</html>
