@@ -266,11 +266,22 @@
         <li>Right-click the source &rarr; <em>Interact</em>, then log in to VTLOG with your Steam account. OBS keeps the
             session active between restarts. Refresh the source to update the overlay.</li>
     </ol>
-
+    
     <div class="note">
         <strong>Session expired?</strong> If the overlay shows a login button instead of job data, right-click the
         source &rarr; <em>Interact</em> and sign in again. Refresh the source to update the overlay.
     </div>
+
+    <h2>3. Inject Job Rate <em style="color:#666;font-size:.8em;font-weight:400">(optional)</em></h2>
+    <p>Paste this into the browser source console via <a href="http://localhost:4455" target="_blank">localhost:4455</a>. Requires OBS launched with:</p>
+    <p><code>--remote-debugging-port=4455 --remote-allow-origins=http://localhost:4455</code></p>
+    <div class="output-wrap">
+        <textarea id="rateOutput" class="css-output" readonly spellcheck="false" style="min-height: 60px; max-height: 80px; resize: none;"
+            placeholder="Fill in your VTLOG profile link above to generate the command."></textarea>
+        <button class="copy-btn" id="copyRateBtn" onclick="copyRate()" disabled>Copy</button>
+    </div>
+
+    
 
     <h2>Usage</h2>
     <ul>
@@ -287,6 +298,8 @@
     </ul>
 
     <script>
+        const RATE_TEMPLATE = `(function(){const S='__STEAM_ID__',T='user-'+S,I=500;function u(){const r=document.getElementById(T);if(!r)return;const ic=r.querySelector('[id$="-income"]'),di=r.querySelector('[id$="-progressDistance"]'),fi=r.querySelector('[id$="td-finance"]'),pr=r.querySelector('[id$="td-progress"]');if(!ic||!di||!fi)return;const h=pr&&pr.classList.contains('d-none'),ex=fi.querySelector('[id$="-rate"]');if(h){if(ex)ex.closest('.line')?.remove();return;}const inc=parseFloat((ic.textContent||'').replace(/[^0-9.]/g,''))||0,m=(di.textContent||'').match(/([\\d\\s,.]+)\\s*\\//),dr=m?parseFloat(m[1].replace(/[\\s,]/g,'')):0;let rt=(dr>0&&isFinite(inc))?inc/dr:0;if(!isFinite(rt))rt=0;if(ex){ex.textContent=rt.toFixed(3);return;}const l=document.createElement('div');l.className='line';const i=document.createElement('i');i.className='fa-solid fa-florin-sign';const s=document.createElement('span');s.id=S+'-rate';s.className='text-info';s.style.fontWeight='700';s.textContent=rt.toFixed(3);l.appendChild(i);l.appendChild(s);fi.appendChild(l);}u();const iv=setInterval(u,I);console.log('[vtlog-rate] started, clearInterval('+iv+') to stop.');})();`;
+
         function parseSteamId(raw) {
             raw = raw.trim();
             const mUrl = raw.match(/^(?:https?:\/\/)?(?:beta\.)?vtlog\.net\/profile\/(7656119\d{10})(?:\/.*)?$/);
@@ -800,6 +813,17 @@ body:has(.OpenIDCol) #imageLogin {
                 cssEl.value = '';
                 copyEl.disabled = true;
             }
+
+            // Rate injection command
+            const rateEl = document.getElementById('rateOutput');
+            const rateCopyEl = document.getElementById('copyRateBtn');
+            if (steamId) {
+                rateEl.value = RATE_TEMPLATE.replace("'__STEAM_ID__'", "'" + steamId + "'");
+                rateCopyEl.disabled = false;
+            } else {
+                rateEl.value = '';
+                rateCopyEl.disabled = true;
+            }
         }
 
         function copyCss() {
@@ -811,6 +835,20 @@ body:has(.OpenIDCol) #imageLogin {
                 btn.classList.add('copied');
                 setTimeout(() => {
                     btn.textContent = 'Copy CSS';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function copyRate() {
+            const val = document.getElementById('rateOutput').value;
+            if (!val) return;
+            navigator.clipboard.writeText(val).then(() => {
+                const btn = document.getElementById('copyRateBtn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
                     btn.classList.remove('copied');
                 }, 2000);
             });
