@@ -318,9 +318,8 @@
             const light = lum > 0.5;
             const barTrack = light ? 'rgb(160 160 160 / 80%)' : 'rgb(80 80 80 / 80%)';
             const barFill = light ? '#181818' : 'rgb(255 153 0)';
-            const speedBorder = light ? 'rgb(160, 160, 160)' : 'rgb(50, 50, 50)';
             const lightExtra = light
-                ? `\n#list tr td:not(:nth-child(7)) * {\n  color: #181818 !important;\n}\n\n.vh-live-speed-val, .vh-live-speed-val.cruise {\n  color: #181818 !important;\n}\n\n.vh-live-card::before,\n.vh-live-card::after {\n  filter: brightness(0) !important;\n}`
+                ? `\n\n#list i {\n  opacity: 1 !important;\n}\n\n#list tr td:not(:nth-child(7)) * {\n  color: #181818 !important;\n}\n\n.vh-live-speed-val, .vh-live-speed-val.cruise {\n  color: #181818 !important;\n}\n\n.vh-live-card::before,\n.vh-live-card::after {\n  filter: brightness(0) !important;\n}`
                 : '';
 
             const hasLogo = logoUrl && logoUrl.trim().length > 0;
@@ -401,25 +400,8 @@ ${logoRule}
   justify-content: center !important;
 }
 
-.vh-live-bar-block {
-  gap: 3px;
-}
-
-.vh-live-bar-h {
-  text-transform: capitalize !important;
-}
-
-i {
-  opacity: 1 !important;
-}
-
 #liveTable {
   width: auto !important;
-}
-
-#list span {
-  font-size: 12px !important;
-  line-height: 12px !important;
 }
 
 #list tr {
@@ -430,11 +412,33 @@ i {
 #list tr td {
   margin: 0 !important;
   border: 0 !important;
-  padding: 0px 25px 0px 0px !important;
+  padding: 0px 20px 0px 0px !important;
 }
 
 tr.users:hover td {
   background: transparent !important;
+}
+
+.vh-live-bar-block {
+  gap: 3px !important;
+}
+
+#list i {
+  opacity: 0.8 !important;
+}
+
+#list span:not(.name span, td:nth-child(7) span) {
+  line-height: 13px !important;
+  opacity: 1 !important;
+}
+
+.name span {
+  font-size: 13px !important;
+  line-height: 13px !important;
+}
+
+.text-info {
+  font-weight: 700 !important;
 }
 
 /* Override colors */
@@ -471,78 +475,60 @@ tr.users:hover td {
 }
 
 /* Override column data styles */
-td:nth-child(1) {
-  max-width: 130px !important;
-  div {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-}
-
-[id$="td-damage"] > div {
-  white-space: nowrap !important;
-}
-
-[id$="td-cargo"] {
-  max-width: 130px !important;
-  div {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-}
-
-td:nth-child(4) div {
-  width: 120px;
-  white-space: nowrap !important;
-}
-
-[id$="td-progress"] {
-  width: 250px !important;
-  min-width: 100px !important;
-  max-width: 300px !important;
-}
-
-[id$="td-progress"] .vh-live-bar-route {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 5px !important;
-  min-width: 0 !important;
-}
-
-[id$="td-progress"] .vh-live-bar-route > span:not(.arrow) {
-  text-transform: none !important;
-  min-width: 0 !important;
-  flex: 1 1 0 !important;
+td div span {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
 
+td:nth-child(1) {
+  max-width: 150px !important;
+}
+
+.vh-live-driver {
+  gap: 3px !important;
+}
+
+.live-dot {
+  margin-left: 3.8px !important;
+}
+
+[id$="td-damage"] {
+  max-width: 70px !important;
+}
+
+[id$="td-cargo"] {
+  max-width: 130px !important;
+}
+
+td:nth-child(4) {
+  width: 130px !important;
+}
+
+[id$="td-progress"] {
+  min-width: 180px !important;
+  max-width: 300px !important;
+}
+
+[id$="td-progress"] .vh-live-bar-route > span:not(.arrow) {
+  text-transform: none;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
+}
+
 [id$="td-progress"] .vh-live-bar-route > .arrow {
   flex-shrink: 0 !important;
+  padding: 0px 3px !important;
 }
 
 [id$="td-progress"] .vh-live-bar-route > [id$="-destination"] {
   text-align: right !important;
 }
 
-[id$="td-finance"] > div {
-  white-space: nowrap !important;
-}
-
 #list tr td:nth-child(7) {
   padding-right: 0px !important;
   .vh-live-speed:not(.over) {
-    border-color: ${speedBorder};
-  }
-  .vh-live-speed-val {
-    font-size: 16px !important;
-  }
-  .vh-live-speed-limit {
-    font-size: 9px !important;
+    border-color: ${barTrack} !important;
   }
 }
 
